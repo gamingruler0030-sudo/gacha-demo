@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>ねこちゃんキャノンガチャ（DEMO版）</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #000;
+    }
+    #game-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #000;
+    }
+    /* スタート待機画面（DEMO用画像） */
+    #start-screen {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: url('startdemo.jpg') no-repeat center center;
+      background-size: contain;
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      z-index: 20;
+    }
+    /* PUSHボタンタップ領域 */
+    #push-touch-area {
+      width: 56%;
+      height: 38%;
+      margin-bottom: 3%;
+      cursor: pointer;
+      background: transparent;
+      border: none;
+      outline: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #push-touch-area:active {
+      transform: scale(0.96) translateY(4px);
+    }
+    /* 動画プレイヤー */
+    #lottery-video {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: none;
+      z-index: 10;
+      background: #000;
+      cursor: default;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="game-container">
+    <div id="start-screen">
+      <button id="push-touch-area"></button>
+    </div>
+
+    <video id="lottery-video" playsinline></video>
+  </div>
+
+  <script>
+    const touchArea = document.getElementById('push-touch-area');
+    const startScreen = document.getElementById('start-screen');
+    const video = document.getElementById('lottery-video');
+
+    // 乱数1〜50に対応するデモ用動画ファイル名リスト（乱数対応表_demo.xlsx より作成）
+    const MOVIE_LIST = [
+      "041_SP_akadama_kannon_kuno_tencho_akadama.mp4", // 乱数 1
+      "041_SP_akadama_kannon_kuno_tencho_akadama.mp4", // 乱数 2
+      "044_SP_takashita_nyan_kuno_tencho_halloween.mp4", // 乱数 3
+      "043_SP_simple_kannon_kuno_men.mp4",             // 乱数 4
+      "031_A_akadama_simple_kuno_tumuneko.mp4",        // 乱数 5
+      "032_A_takashita_kuno_tumuneko.mp4",             // 乱数 6
+      "035_A_akadama_simple_kuno_tumudama.mp4",        // 乱数 7
+      "036_A_takashita_kuno_tumudama.mp4",             // 乱数 8
+      "021_B_akadama_kannon_headstrap.mp4",            // 乱数 9
+      "022_B_takashita_headstrap.mp4",                 // 乱数 10
+      "023_B_akadama_kannon_earring.mp4",               // 乱数 11
+      "024_B_takashita_earring.mp4",                     // 乱数 12
+      "025_B_akadama_kannon_nuikan.mp4",                // 乱数 13
+      "026_B_takashita_nuikan.mp4",                    // 乱数 14
+      "027_B_akadama_kannon_yurayura.mp4",             // 乱数 15
+      "028_B_takashita_yurayura.mp4",                  // 乱数 16
+      "018_C_akadama_pin_ticket2.mp4",                 // 乱数 17
+      "017_C_akadama_pin_ticket1.mp4",                 // 乱数 18
+      "017_C_akadama_pin_ticket1.mp4",                 // 乱数 19
+      "015_C_akadama_pin.mp4",                         // 乱数 20
+      "015_C_akadama_pin.mp4",                         // 乱数 21
+      "016_C_simple_pin.mp4",                          // 乱数 22
+      "016_C_simple_pin.mp4",                          // 乱数 23
+      "014_C_akadama_strap_ticket2.mp4",               // 乱数 24
+      "013_C_akadama_strap_ticket1.mp4",               // 乱数 25
+      "013_C_akadama_strap_ticket1.mp4",               // 乱数 26
+      "011_C_akadama_strap.mp4",                       // 乱数 27
+      "011_C_akadama_strap.mp4",                       // 乱数 28
+      "012_C_simple_strap.mp4",                        // 乱数 29
+      "012_C_simple_strap.mp4",                        // 乱数 30
+      "005_D_ofck_ticket4.mp4",                        // 乱数 31
+      "005_D_ofck_ticket4.mp4",                        // 乱数 32
+      "003_D_simple_ticket2.mp4",                      // 乱数 33
+      "003_D_simple_ticket2.mp4",                      // 乱数 34
+      "003_D_simple_ticket2.mp4",                      // 乱数 35
+      "002_D_simple_ticket1.mp4",                      // 乱数 36
+      "002_D_simple_ticket1.mp4",                      // 乱数 37
+      "002_D_simple_ticket1.mp4",                      // 乱数 38
+      "002_D_simple_ticket1.mp4",                      // 乱数 39
+      "002_D_simple_ticket1.mp4",                      // 乱数 40
+      "001_D_simple.mp4",                              // 乱数 41
+      "001_D_simple.mp4",                              // 乱数 42
+      "001_D_simple.mp4",                              // 乱数 43
+      "001_D_simple.mp4",                              // 乱数 44
+      "001_D_simple.mp4",                              // 乱数 45
+      "001_D_simple.mp4",                              // 乱数 46
+      "001_D_simple.mp4",                              // 乱数 47
+      "001_D_simple.mp4",                              // 乱数 48
+      "001_D_simple.mp4",                              // 乱数 49
+      "001_D_simple.mp4"                               // 乱数 50
+    ];
+
+    let isPlaying = false;
+    let isWaitingClick = false;
+
+    // PUSHボタンを押して抽選スタート
+    touchArea.addEventListener('click', () => {
+      if (isPlaying || isWaitingClick) return;
+      isPlaying = true;
+
+      // 1 〜 50 の乱数を生成
+      const randomNum = Math.floor(Math.random() * MOVIE_LIST.length) + 1;
+      
+      // 配列のインデックス（0 〜 49）に変換してファイル名を取得
+      const targetVideo = MOVIE_LIST[randomNum - 1];
+
+      console.log(`[DEMO] 抽選結果: ${randomNum} 番 → 再生: ${targetVideo}`);
+
+      video.src = targetVideo;
+      video.load();
+
+      startScreen.style.display = 'none';
+      video.style.display = 'block';
+
+      video.play().catch(e => {
+        console.error('再生失敗:', e);
+        resetGame();
+      });
+    });
+
+    // 動画再生が最後まで完了したときの処理
+    video.addEventListener('ended', () => {
+      isPlaying = false;
+      isWaitingClick = true; // タップで復帰できる待機状態にする
+      video.style.cursor = 'pointer';
+    });
+
+    // 再生終了後、画面をタップ/クリックしたら待機画面へ復帰
+    video.addEventListener('click', () => {
+      if (isWaitingClick) {
+        resetGame();
+      }
+    });
+
+    // 待機画面へリセットする共通関数
+    function resetGame() {
+      video.pause();
+      video.removeAttribute('src');
+      video.load();
+      video.style.display = 'none';
+      video.style.cursor = 'default';
+      startScreen.style.display = 'flex';
+      isPlaying = false;
+      isWaitingClick = false;
+    }
+  </script>
+</body>
+</html>
